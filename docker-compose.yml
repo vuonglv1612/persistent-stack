@@ -1,0 +1,72 @@
+version: "3.5"
+
+services:
+    mongodb:
+        container_name: mongodb
+        image: mongo:4.2
+        volumes:
+            - "${MONGO_BACKUP_DATA_PATH}:/data/db"
+        ports:
+            - "${MONGO_PUBLIC_PORT}:${MONGO_PRIVATE_PORT}"
+        restart: always
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${MONGO_LOGGING_MAX_SIZE}
+                max-file: ${MONGO_LOGGING_MAX_FILE}
+
+    redis:
+        container_name: redis
+        image: redis:6.0-rc-alpine3.11
+        command: ["redis-server", "--appendonly", "yes"]
+        volumes:
+            - "${REDIS_BACKUP_DATA_PATH}:/data"
+        ports:
+            - "${REDIS_PUBLIC_PORT}:${REDIS_PRIVATE_PORT}"
+        restart: always
+        environment:
+            - REDIS_PASSWORD=${REDIS_PASSWORD}
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${REDIS_LOGGING_MAX_SIZE}
+                max-file: ${REDIS_LOGGING_MAX_FILE}
+
+    rabbitmq:
+        container_name: rabbitmq
+        image: rabbitmq:3.8-management-alpine
+        environment:
+            RABBITMQ_ERLANG_COOKIE: ${RABBITMQ_ERLANG_COOKIE}
+            RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+            RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+            RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+        ports:
+            - ${RABBITMQ_MANAGEMENT_PUBLIC_PORT}:${RABBITMQ_MANAGEMENT_PRIVATE_PORT}
+            - ${RABBITMQ_PUBLIC_PORT}:${RABBITMQ_PRIVATE_PORT}
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${RABBITMQ_LOGGING_MAX_SIZE}
+                max-file: ${RABBITMQ_LOGGING_MAX_FILE}
+
+    postgres:
+        container_name: postgres
+        image: postgres:9.6-alpine
+        ports:
+            - ${POSTGRES_PUBLIC_PORT}:${POSTGRES_PRIVATE_PORT}
+        volumes:
+            - "${POSTGRES_BACKUP_DATA_PATH}:/var/lib/postgresql/data"
+        environment:
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_DB: ${POSTGRES_DB}
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${POSTGRES_LOGGING_MAX_SIZE}
+                max-file: ${POSTGRES_LOGGING_MAX_FILE}
+        restart: always
+
