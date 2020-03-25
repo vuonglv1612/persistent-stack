@@ -8,7 +8,7 @@ services:
             - "${MONGO_BACKUP_DATA_PATH}:/data/db"
         ports:
             - "${MONGO_PUBLIC_PORT}:${MONGO_PRIVATE_PORT}"
-        restart: always
+        restart: unless-stopped
         environment:
             MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
             MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
@@ -26,7 +26,7 @@ services:
             - "${REDIS_BACKUP_DATA_PATH}:/data"
         ports:
             - "${REDIS_PUBLIC_PORT}:${REDIS_PRIVATE_PORT}"
-        restart: always
+        restart: unless-stopped
         environment:
             - REDIS_PASSWORD=${REDIS_PASSWORD}
         logging:
@@ -46,6 +46,7 @@ services:
         ports:
             - ${RABBITMQ_MANAGEMENT_PUBLIC_PORT}:${RABBITMQ_MANAGEMENT_PRIVATE_PORT}
             - ${RABBITMQ_PUBLIC_PORT}:${RABBITMQ_PRIVATE_PORT}
+        restart: unless-stopped
         logging:
             driver: "json-file"
             options:
@@ -68,5 +69,58 @@ services:
             options:
                 max-size: ${POSTGRES_LOGGING_MAX_SIZE}
                 max-file: ${POSTGRES_LOGGING_MAX_FILE}
-        restart: always
+        restart: unless-stopped
 
+    elasticsearch:
+        container_name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.5.2
+        user: "1000:1000"
+        volumes:
+            - "${ELASTICSEARCH_DATA_PATH}:/usr/share/elasticsearch/data"
+            - "${ELASTICSEARCH_CONFIG_PATH}:/usr/share/elasticsearch/config/elasticsearch.yml"
+            - "${ELASTICSEARCH_BACKUP_DATA_PATH}:/usr/share/elasticsearch/backups"
+        environment:
+            - cluster.name=docker-cluster
+            - bootstrap.memory_lock=true
+            - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+        environment:
+            ELASTIC_USERNAME: ${ELASTICSEARCH_USERNAME}
+            ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+        ports:
+            - "${ELASTICSEARCH_PUBLIC_PORT}:${ELASTICSEARCH_PRIVATE_PORT}"
+            - "9300"
+        restart: unless-stopped
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${ELASTICSEARCH_LOGGING_MAX_SIZE}
+                max-file: ${ELASTICSEARCH_LOGGING_MAX_FILE}
+        networks:
+            - elasticsearch
+
+    kibana:
+        container_name: kibana
+        image: docker.elastic.co/kibana/kibana:7.5.2
+        user: "1000:1000"
+        volumes:
+            - "${KIBANA_CONFIG_PATH}:/usr/share/kibana/config"
+        ports:
+            - "${KIBANA_PUBLIC_PORT}:${KIBANA_PRIVATE_PORT}"
+        restart: unless-stopped
+        logging:
+            driver: "json-file"
+            options:
+                max-size: ${KIBANA_LOGGING_MAX_SIZE}
+                max-file: ${KIBANA_LOGGING_MAX_FILE}
+        networks:
+            - elasticsearch
+        depends_on:
+            - elasticsearch
+
+networks:
+     elasticsearch:
+         driver: bridge
